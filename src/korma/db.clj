@@ -2,7 +2,8 @@
   "Functions for creating and managing database specifications."
   (:require [clojure.java.jdbc.deprecated :as jdbc]
             [korma.config :as conf])
-  (:import (com.mchange.v2.c3p0 ComboPooledDataSource)))
+  (:import [com.mchange.v2.c3p0 ComboPooledDataSource]
+           [java.util Properties]))
 
 (defonce _default (atom nil))
 
@@ -12,6 +13,14 @@
   [conn]
   (conf/merge-defaults (:options conn))
   (reset! _default conn))
+
+(defn properties [spec]
+  (reduce
+    (fn [prop [k v]]
+      (.setProperty prop (name k) (str v))
+      prop)
+    (Properties.)
+    spec))
 
 (defn connection-pool
   "Create a connection pool for the given database spec."
@@ -42,7 +51,8 @@
                  (.setIdleConnectionTestPeriod idle-connection-test-period)
                  (.setTestConnectionOnCheckin test-connection-on-checkin)
                  (.setTestConnectionOnCheckout test-connection-on-checkout)
-                 (.setPreferredTestQuery test-connection-query))})
+                 (.setPreferredTestQuery test-connection-query)
+                 (.setProperties (properties spec)))})
 
 (defn delay-pool
   "Return a delay for creating a connection pool for the given spec."
